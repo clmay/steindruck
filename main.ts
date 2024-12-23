@@ -7,11 +7,13 @@ const html = await response.text();
 const $ = load(html);
 
 const taplist = Array.from($(".list-menu-item")).map((el) => {
-  const [tapNumber, brewery] = $(el)
+  const [tapNumberText, brewery] = $(el)
     .find(".list-menu-item__head span:nth-of-type(1)")
     .text()
     .split(".")
     .map((s) => s.trim());
+
+  const tapNumber = parseInt(tapNumberText);
 
   const name = $(el)
     .find(".list-menu-item__head span:nth-of-type(2)")
@@ -37,7 +39,7 @@ const taplist = Array.from($(".list-menu-item")).map((el) => {
     price: $(row).find("td").eq(1).text().trim(),
   }));
 
-  const percentRemaining = parseFloat(
+  const percentRemaining = parseInt(
     $(el)
       .find(".list-menu-item__progress strong")
       .text()
