@@ -2,7 +2,7 @@ import { load } from "cheerio";
 
 const url = "https://thebierstein.com/draft-bottles/";
 
-console.log(`Fetching from ${url}...`);
+console.log(`Fetching from ${url}`);
 const response = await fetch(url).catch((error) => {
   throw new Error(`Failed to fetch ${url}: ${error.message}`);
 });
@@ -79,7 +79,7 @@ if (taplist.length === 0) {
   throw new Error("No taplist entries found in the response");
 }
 
-console.log(`Successfully parsed ${taplist.length} tap items`);
+console.log(`Parsed ${taplist.length} entries`);
 
 const timestamp = new Date(response.headers.get("date") || new Date());
 const year = timestamp.toLocaleString("en", { year: "numeric" });
@@ -99,16 +99,16 @@ const outputData = {
   data: taplist,
 };
 
-console.log(`Creating directory: ${dirPath}`);
+console.log(`Creating directory... ${dirPath}`);
 await Deno.mkdir(dirPath, { recursive: true }).catch((error) => {
   throw new Error(`Failed to create directory ${dirPath}: ${error.message}`);
 });
 
-console.log(`Writing file: ${fileName}`);
+console.log(`Writing file... ${fileName}`);
 await Deno.writeTextFile(fileName, JSON.stringify(outputData, null, 2)).catch(
   (error) => {
     throw new Error(`Failed to write file ${fileName}: ${error.message}`);
-  },
+  }
 );
 
-console.log("Success! - Exiting...");
+console.log("Success!");
