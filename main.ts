@@ -39,12 +39,12 @@ const taplist = Array.from($(".list-menu-item")).map((el) => {
     price: $(row).find("td").eq(1).text().trim(),
   }));
 
-  const percentRemaining = parseInt(
-    $(el)
-      .find(".list-menu-item__progress strong")
-      .text()
-      .replace(/[^0-9.]/g, "")
-  );
+  const percentRemainingText = $(el)
+    .find(".list-menu-item__progress strong")
+    .text()
+    .replace(/[^0-9.]/g, "");
+
+  const percentRemaining = parseInt(percentRemainingText);
 
   return {
     tapNumber,
