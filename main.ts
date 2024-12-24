@@ -2,11 +2,26 @@ import { load } from "cheerio";
 
 const url = "https://thebierstein.com/draft-bottles/";
 
-const response = await fetch(url);
+console.log(`Fetching from ${url}...`);
+const response = await fetch(url).catch((error) => {
+  throw new Error(`Failed to fetch ${url}: ${error.message}`);
+});
+
+if (!response.ok) {
+  throw new Error(`HTTP ${response.status} ${response.statusText}`);
+}
+
 const html = await response.text();
+
+if (!html) {
+  throw new Error("No response body received");
+}
+
+console.log("Parsing HTML...");
 const $ = load(html);
 
-const taplist = Array.from($(".list-menu-item")).map((el) => {
+const taplistEntries = $(".list-menu-item");
+const taplist = Array.from(taplistEntries).map((el) => {
   const [tapNumberText, brewery] = $(el)
     .find(".list-menu-item__head span:nth-of-type(1)")
     .text()
@@ -33,11 +48,13 @@ const taplist = Array.from($(".list-menu-item")).map((el) => {
 
   const abv = parseFloat(abvText.replace(/[^0-9.]/g, ""));
 
-  const pricesTable = $(el).find(".list-menu-item__table tbody tr");
-  const prices = Array.from(pricesTable).map((row) => ({
-    size: $(row).find("td").eq(0).text().trim(),
-    price: $(row).find("td").eq(1).text().trim(),
-  }));
+  const pricingTable = $(el).find(".list-menu-item__table tbody tr");
+  const prices = Array.from(pricingTable).map((row) => {
+    return {
+      size: $(row).find("td").eq(0).text().trim(),
+      price: $(row).find("td").eq(1).text().trim(),
+    };
+  });
 
   const percentRemainingText = $(el)
     .find(".list-menu-item__progress strong")
@@ -58,4 +75,40 @@ const taplist = Array.from($(".list-menu-item")).map((el) => {
   };
 });
 
-console.log(JSON.stringify(taplist, null, 2));
+if (taplist.length === 0) {
+  throw new Error("No taplist entries found in the response");
+}
+
+console.log(`Successfully parsed ${taplist.length} tap items`);
+
+const timestamp = new Date(response.headers.get("date") || new Date());
+const year = timestamp.toLocaleString("en", { year: "numeric" });
+const month = timestamp.toLocaleString("en", { month: "2-digit" });
+const day = timestamp.toLocaleString("en", { day: "2-digit" });
+const hour = timestamp.toLocaleString("en", { hour: "2-digit", hour12: false });
+const minute = timestamp.toLocaleString("en", { minute: "2-digit" });
+const second = timestamp.toLocaleString("en", { second: "2-digit" });
+
+const dirPath = `data/${year}/${month}/${day}`;
+const fileName = `${dirPath}/${hour}:${minute}:${second}.json`;
+
+const outputData = {
+  timestamp: timestamp.toISOString(),
+  url,
+  responseStatus: `${response.status} ${response.statusText}`,
+  data: taplist,
+};
+
+console.log(`Creating directory: ${dirPath}`);
+await Deno.mkdir(dirPath, { recursive: true }).catch((error) => {
+  throw new Error(`Failed to create directory ${dirPath}: ${error.message}`);
+});
+
+console.log(`Writing file: ${fileName}`);
+await Deno.writeTextFile(fileName, JSON.stringify(outputData, null, 2)).catch(
+  (error) => {
+    throw new Error(`Failed to write file ${fileName}: ${error.message}`);
+  },
+);
+
+console.log("Success! - Exiting...");
